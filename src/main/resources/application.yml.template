@@ -3,9 +3,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:typeahead_db}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://localhost:5432/typeahead_db
+    username: postgres
+    password: YOUR_DB_PASSWORD_HERE
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:

@@ -6,6 +6,9 @@ target/
 .env.local
 .env.*.local
 
+# Local Spring Boot configurations
+src/main/resources/application.yml
+
 # Python Virtual Environment
 .venv/
 venv/
