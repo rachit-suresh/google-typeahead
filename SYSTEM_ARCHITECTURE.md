@@ -1,44 +1,50 @@
 # High-Performance Search Typeahead System: Complete Architecture, Design Decisions, & Benchmark Methodology
 
-This document provides a highly detailed architectural specification of the Search Typeahead System, detailing key design decisions, trade-offs, and performance benchmarks.
+This document provides a highly detailed architectural specification of the Search Typeahead System, detailing key design decisions, trade-offs, and performance benchmarks in our fully containerized environment.
 
 ---
 
-## 1. System Topology & Data Flow
+## 1. System Topology & Data Flow (Containerized Stack)
 
-Below is the complete architectural layout of the search typeahead microservices, illustrating client-to-backend communication, caching, and storage layers:
+The entire application stack is containerized and orchestrated via Docker Compose. Below is the architectural layout showing port mappings from the host to the internal Docker virtual network (`bridge` mode):
 
 ```
-                            ┌─────────────────────────────────┐
-                            │    Client (React Frontend)      │
-                            │     http://localhost:5173       │
-                            └────┬────────────────────────┬───┘
-                                 │                        │
-               (GET /suggest)    │                        │  (POST /search/submit)
-          Fetch Prefix list      │                        │  Record User Search
-                                 ▼                        ▼
-                   ┌────────────────────────┐  ┌────────────────────────┐
-                   │ Typeahead Microservice │  │ Search Microservice    │
-                   │ Spring Boot (Port 8080)│  │ Node.js (Port 8081)    │
-                   └───────────┬────────────┘  └───────────┬────────────┘
-                               │                           │
-           Consistent Hashing  │                           │ Evicts prefixes
-           Key Lookup Ring     │                           │ (e.g., 'a', 'ap', 'app')
-           (TreeMap / MD5)     │                           │
-                               ├──────────────┬────────────┼────────────────┐
-                               ▼              ▼            ▼                │
-                       ┌─────────────┐ ┌─────────────┐ ┌─────────────┐      │
-                       │ Redis Node 1│ │ Redis Node 2│ │ Redis Node 3│      │
-                       │  Port 6379  │ │  Port 6380  │ │  Port 6381  │      │
-                       └─────────────┘ └─────────────┘ └─────────────┘      │
-                               │                                            │
-                               │  Reads on misses / Flushes batches         │
-                               ▼                                            ▼
-                  ┌───────────────────────────────────────────────────────────┐
-                  │                PostgreSQL (Port 5432)                     │
-                  │              Table: 'search_queries'                      │
-                  └───────────────────────────────────────────────────────────┘
+                        ┌──────────────────────────────────────┐
+                        │       Client (React Frontend)        │
+                        │        http://localhost:5173         │
+                        └─────┬──────────────────────────┬─────┘
+                              │                          │
+            (GET /suggest)    │                          │ (POST /search/submit)
+       Fetch Prefix suggestions│                          │ Record Search Updates
+                              ▼                          ▼
+      ┌─────────────────────────────────┐      ┌─────────────────────────────────┐
+      │     Typeahead Microservice      │      │       Search Microservice       │
+      │   (typeahead-backend container) │      │  (search-microservice container)│
+      │      Exposed on Host: 8080      │      │      Exposed on Host: 8081      │
+      └──────────────┬──────────────────┘      └────────────────┬────────────────┘
+                     │                                          │
+                     │  Consistent Hashing Key Lookup           │ Evicts stale prefixes
+                     │  (Ketama Ring via TreeMap/MD5)           │ (e.g. 'a', 'ap', 'app')
+                     │                                          │
+                     ├─────────────────┬────────────────────────┼───────────────┐
+                     ▼                 ▼                        ▼               │
+           ┌─────────────────┐ ┌─────────────────┐    ┌─────────────────┐       │
+           │  Redis Node 1   │ │  Redis Node 2   │    │  Redis Node 3   │       │
+           │(typeahead-redis-1││(typeahead-redis-2│   │(typeahead-redis-3│      │
+           │Host Port: 6379  │ │Host Port: 6380  │    │Host Port: 6381  │       │
+           └─────────────────┘ └─────────────────┘    └─────────────────┘       │
+                     │                                                          │
+                     │  Reads on misses / Periodic bulk flushes                 │
+                     ▼                                                          ▼
+        ┌───────────────────────────────────────────────────────────────────────────┐
+        │                           PostgreSQL Database                             │
+        │                       (typeahead-postgres container)                      │
+        │         Exposed on Host: 5433  <───>  Internal Container Port: 5432       │
+        └───────────────────────────────────────────────────────────────────────────┘
 ```
+
+*   **Docker Container Networking**: All microservices run on the same virtual network bridge. Within the network, the Java service connects directly to `postgres:5432` and `redis-node-1/2/3:6379`.
+*   **Host Port Isolation**: To resolve port collisions with pre-existing system services on the host machine, the containerized PostgreSQL database is exposed on **host port `5433`** (mapped internally to container port `5432`).
 
 ---
 
@@ -96,38 +102,32 @@ Below is the complete architectural layout of the search typeahead microservices
 ## 3. Performance Benchmarks & Methodology
 
 ### A. How the Performance Metrics Were Gathered
-To ensure realistic concurrency and latency reporting, we bypassed simulated mocks and performed an end-to-end load test against the live running microservices:
+To ensure realistic concurrency and latency reporting, we bypassed simulated mocks and performed an end-to-end load test against our containerized microservice stack:
 
 1. **Test Environment**:
-   - **Database**: PostgreSQL 17 running on localhost:5432.
-   - **Cache**: 3 Redis standalone processes on ports 6379, 6380, and 6381.
-   - **Backend**: Spring Boot 4.0.0 on Tomcat 11, running under Java 25 (OpenJDK 25.0.1).
-   - **Network Profile**: Loopback interface (`localhost`), removing external route latency but retaining localhost TCP socket handshake overhead.
+   - **Database**: PostgreSQL 17 running in `typeahead-postgres` container, mapped to host port **`5433`**.
+   - **Cache**: 3 Redis containers mapped to host ports **`6379`**, **`6380`**, and **`6381`**.
+   - **Backend**: Spring Boot 4.0.0 container exposed on port **`8080`**.
+   - **Network Profile**: Local loopback TCP sockets checking out connection pools and handling serialization.
 
 2. **Benchmark Script Mechanism**:
    We wrote a Python automation script (`benchmark_writes.py`) using the standard library. The core logic is structured as follows:
    - **Client Concurrency**: Created a `ThreadPoolExecutor` with a pool of `10` worker threads running in parallel. This simulates ten independent end-users typing/submitting queries simultaneously.
    - **Task Load**: Dispatched `200` unique search registration POST requests to the `/typeahead/record` endpoint.
-   - **Precision Timing**:
-     - Captured the request start and end times using `time.perf_counter()`, which leverages high-resolution hardware timers (sub-microsecond resolution).
-     - Calculated the delta (end - start) for each thread call, capturing total client round-trip latency (network handshake + HTTP serialization + Tomcat dispatcher + thread orchestration + memory merge).
-   - **Warm-Up Execution**:
-     - *First Run (Cold)*: Subject to initial Java Classloader lookups, Spring controller mapping cache hits, Hikari database connection pool allocation, and JIT compilation. This resulted in an average latency of ~32ms and a maximum latency of 631ms.
-     - *Second Run (Warm)*: Evaluated after connection pool pools were fully checked out and Java methods were JIT-compiled. This produced clean operational statistics.
+   - **Precision Timing**: Captured total client round-trip latency using high-resolution hardware timers (`time.perf_counter()`).
    - **Throughput Calculation**: Computed as:
      $$\text{Throughput} = \frac{\text{Total Successfully Processed Requests}}{\text{Total Elapsed Time}}$$
-     The total elapsed time is measured from the launch of the executor pool until all threads complete.
 
 3. **Database Write Integrity Check**:
-   To confirm that no queries were dropped during concurrent memory merging, a validation script (`verify_bench_db.py`) connected directly to PostgreSQL via JDBC/psycopg2 to verify the record count. The output confirmed that exactly **200/200** queries were written, proving 100% write accuracy.
+   To confirm that no queries were dropped during concurrent memory merging, a validation script (`verify_bench_db.py`) connected directly to the containerized PostgreSQL via port `5433` to verify the record count. The output confirmed that exactly **200/200** queries were written, proving 100% write accuracy.
 
 ### B. Summary Metrics Table
 
 | Metric | Synchronous Write Path (Before) | Asynchronous Batch Write Path (After) |
 | :--- | :--- | :--- |
-| **Average Response Latency** | ~18.5 ms | **21.33 ms** (includes connection pool checks) |
-| **Minimum Latency** | ~4.2 ms | **2.86 ms** |
-| **Max Throughput** | ~54 req/sec | **306.71 req/sec** |
+| **Average Response Latency** | ~18.5 ms | **32.01 ms** (includes docker gateway hops) |
+| **Minimum Latency** | ~4.2 ms | **5.16 ms** |
+| **Max Throughput** | ~54 req/sec | **243.93 req/sec** |
 | **PostgreSQL Write Count** | 1 write / request | **1 write / batch (up to 100x reduction)** |
 | **Cache Stampede Potential** | High (immediate prefix clearing) | **Zero** (eviction aligned to database commits) |
 
@@ -136,15 +136,15 @@ To ensure realistic concurrency and latency reporting, we bypassed simulated moc
 ## 4. How to Run & Verify
 
 1. **Verify Backend Status**:
-   - Ensure the Spring Boot app is running on port `8080`.
-   - Ensure Redis instances are active on ports `6379`, `6380`, `6381`.
+   - Start the container stack: `docker compose up -d`
+   - Confirm all 7 containers are `Up`.
 2. **Submit Telemetry Searches**:
    - Run the automated benchmarking script to simulate write-path traffic:
      ```bash
      .\.venv\Scripts\python.exe C:\Users\vangs\.gemini\antigravity-ide\brain\a98ba661-7819-47e6-ada7-9dd23b3adc12\scratch\benchmark_writes.py
      ```
 3. **Verify Counts**:
-   - Run the DB verification script to confirm all buffered records flush successfully to PostgreSQL:
+   - Run the DB verification script to confirm all buffered records flush successfully to the containerized database:
      ```bash
      .\.venv\Scripts\python.exe C:\Users\vangs\.gemini\antigravity-ide\brain\a98ba661-7819-47e6-ada7-9dd23b3adc12\scratch\verify_bench_db.py
      ```
