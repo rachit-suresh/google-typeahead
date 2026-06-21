@@ -50,15 +50,13 @@ DB_USER=postgres
 DB_PASSWORD=18112006
 ```
 
-### 2. Loading the AOL Dataset
-The table schema is automatically initialized on startup by the backend (`ddl-auto: update`).
-To import the AOL Search logs dataset:
-1. Activate your virtual environment and run the Jupyter notebook:
-   ```bash
-   .\.venv\Scripts\activate
-   jupyter notebook
-   ```
-2. Open and run all cells in [data_loader.ipynb](file:///c:/Users/vangs/cursor/HLD/data_loader.ipynb). It will pull, aggregate, and bulk insert data into the containerized database on port `5433`.
+### 2. Automatic Data Loading (AOL Dataset)
+The dataset is **automatically loaded on startup** by the `database-loader` Docker container using the `data_loader.py` script.
+- **Auto-detection**: The script automatically checks if the `search_queries` table is already populated. If records exist, it skips the Kaggle download and data aggregation to avoid duplication.
+- **Manual Reload**: If you ever need to run the loading process manually from your host machine, you can run:
+  ```bash
+  .\.venv\Scripts\python.exe data_loader.py
+  ```
 
 ---
 

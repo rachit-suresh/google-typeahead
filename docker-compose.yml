@@ -86,5 +86,21 @@ services:
       - ./frontend:/app
       - /app/node_modules
 
+  data-loader:
+    build:
+      context: .
+      dockerfile: Dockerfile.data-loader
+    container_name: database-loader
+    depends_on:
+      - postgres
+    volumes:
+      - ~/.kaggle:/root/.kaggle
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=typeahead_db
+      - DB_USER=postgres
+      - DB_PASSWORD=18112006
+
 volumes:
   postgres-data:
