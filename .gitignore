@@ -42,3 +42,7 @@ CODEBASE_EXPLANATION.md
 
 # Portable Redis binaries
 redis/
+
+# Node.js dependencies
+search-service/node_modules/
+frontend/node_modules/
