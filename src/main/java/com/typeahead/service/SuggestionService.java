@@ -20,6 +20,7 @@ public class SuggestionService {
     private final SearchQueryRepository repository;
     private final RedisCacheService cacheService;
     private final ScoringStrategy scoringStrategy;
+    private final SearchQueryBatchWriter batchWriter;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final int limit;
 
@@ -27,10 +28,12 @@ public class SuggestionService {
             SearchQueryRepository repository,
             RedisCacheService cacheService,
             ScoringStrategy scoringStrategy,
+            SearchQueryBatchWriter batchWriter,
             @Value("${typeahead.suggestion.limit:10}") int limit) {
         this.repository = repository;
         this.cacheService = cacheService;
         this.scoringStrategy = scoringStrategy;
+        this.batchWriter = batchWriter;
         this.limit = limit;
     }
 
@@ -89,20 +92,7 @@ public class SuggestionService {
     }
 
     public void recordSearch(String query) {
-        if (query == null || query.trim().isEmpty()) {
-            return;
-        }
-
-        String normalizedQuery = query.trim().toLowerCase();
-        
-        // 1. Record search in PostgreSQL
-        repository.upsertQuery(normalizedQuery);
-        
-        // 2. Evict cache keys for all prefixes of the query to prevent stale suggestions
-        for (int i = 1; i <= normalizedQuery.length(); i++) {
-            String prefix = normalizedQuery.substring(0, i);
-            String cacheKey = "suggest:" + prefix;
-            cacheService.evict(cacheKey);
-        }
+        // Delegate write to memory buffer for batch writes
+        batchWriter.queueSearch(query);
     }
 }
