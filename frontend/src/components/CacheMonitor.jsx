@@ -33,7 +33,7 @@ export default function CacheMonitor({ stats }) {
               {/* Cached Keys Inset List */}
               <div className="win95-inset bg-white w-full h-24 p-1 overflow-y-auto text-left font-win-mono text-[9px] border border-win-border-dark select-text leading-tight">
                 <div className="font-bold border-b border-[#dfdfdf] pb-0.5 mb-1 text-[8px] text-win-navy uppercase select-none">
-                  KEYS ({nodeKeys.length})
+                  KEYS ({node.keyCount !== undefined ? node.keyCount.toLocaleString() : nodeKeys.length})
                 </div>
                 {nodeKeys.length === 0 ? (
                   <span className="text-win-border-dark italic select-none">Empty</span>

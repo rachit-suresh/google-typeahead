@@ -91,6 +91,37 @@ public class SuggestionService {
         return suggestions;
     }
 
+    public List<SuggestionResponse> getSuggestionsDirect(String prefix) {
+        if (prefix == null || prefix.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String normalizedPrefix = prefix.trim().toLowerCase();
+        LocalDateTime now = LocalDateTime.now();
+
+        return repository.findTopByPrefix(
+                    normalizedPrefix,
+                    scoringStrategy.getDayWeight(),
+                    scoringStrategy.getWeekWeight(),
+                    scoringStrategy.getMonthWeight(),
+                    PageRequest.of(0, limit)
+                )
+                .stream()
+                .map(entity -> {
+                    double score = scoringStrategy.score(entity, now);
+                    return new SuggestionResponse(
+                        entity.getQuery(),
+                        Math.round(score),
+                        score,
+                        entity.getDayCount(),
+                        entity.getWeekCount(),
+                        entity.getMonthCount()
+                    );
+                })
+                .sorted((a, b) -> Double.compare(b.score(), a.score()))
+                .toList();
+    }
+
     public void recordSearch(String query) {
         // Delegate write to memory buffer for batch writes
         batchWriter.queueSearch(query);

@@ -22,7 +22,7 @@ public interface SearchQueryRepository extends JpaRepository<SearchQueryEntity, 
      */
     @Query(value = """
         SELECT * FROM search_queries
-        WHERE LOWER(query) LIKE LOWER(CONCAT(:prefix, '%'))
+        WHERE query LIKE CONCAT(:prefix, '%')
         ORDER BY (day_count * :dayW + week_count * :weekW + month_count * :monthW) DESC
         """,
         nativeQuery = true)
@@ -65,4 +65,18 @@ public interface SearchQueryRepository extends JpaRepository<SearchQueryEntity, 
         """,
         nativeQuery = true)
     void upsertQuery(@Param("query") String query);
+
+    /**
+     * Finds the top popular search queries globally, ordered by the dynamic weighted score.
+     */
+    @Query(value = """
+        SELECT * FROM search_queries
+        ORDER BY (day_count * :dayW + week_count * :weekW + month_count * :monthW) DESC
+        """,
+        nativeQuery = true)
+    List<SearchQueryEntity> findTopQueries(
+        @Param("dayW")   double dayWeight,
+        @Param("weekW")  double weekWeight,
+        @Param("monthW") double monthWeight,
+        Pageable pageable);
 }

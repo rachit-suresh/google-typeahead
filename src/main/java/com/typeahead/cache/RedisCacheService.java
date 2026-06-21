@@ -92,6 +92,36 @@ public class RedisCacheService {
         }
     }
 
+    public void putAllPipelined(Map<String, String> keyValues) {
+        // Group keyValues by node name
+        Map<String, Map<String, String>> nodeKeyValues = new HashMap<>();
+        for (Map.Entry<String, String> entry : keyValues.entrySet()) {
+            String key = entry.getKey();
+            String nodeName = hashRing.getNode(key);
+            if (nodeName != null) {
+                nodeKeyValues.computeIfAbsent(nodeName, k -> new HashMap<>()).put(key, entry.getValue());
+            }
+        }
+
+        // Execute pipelined writes for each node
+        for (Map.Entry<String, Map<String, String>> nodeEntry : nodeKeyValues.entrySet()) {
+            String nodeName = nodeEntry.getKey();
+            JedisPool pool = pools.get(nodeName);
+            if (pool == null) continue;
+
+            Map<String, String> items = nodeEntry.getValue();
+            try (Jedis jedis = pool.getResource()) {
+                redis.clients.jedis.Pipeline pipeline = jedis.pipelined();
+                for (Map.Entry<String, String> item : items.entrySet()) {
+                    pipeline.setex(item.getKey(), cacheConfig.getTtlSeconds(), item.getValue());
+                }
+                pipeline.sync();
+            } catch (Exception e) {
+                System.err.println("Error doing pipelined writes to Redis Node " + nodeName + ": " + e.getMessage());
+            }
+        }
+    }
+
     public void evict(String key) {
         String nodeName = hashRing.getNode(key);
         if (nodeName == null) return;
@@ -113,15 +143,16 @@ public class RedisCacheService {
             JedisPool pool = pools.get(nodeName);
             List<String> keys = new ArrayList<>();
             try (Jedis jedis = pool.getResource()) {
-                String cursor = ScanParams.SCAN_POINTER_START;
-                ScanParams scanParams = new ScanParams().count(100);
-                do {
-                    ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
-                    keys.addAll(scanResult.getResult());
-                    cursor = scanResult.getCursor();
-                } while (!cursor.equals(ScanParams.SCAN_POINTER_START));
+                // Perform a single scan request with a small count parameter to get a sample of keys.
+                // This prevents loading hundreds of thousands of keys and freezing the system.
+                ScanParams scanParams = new ScanParams().count(15);
+                ScanResult<String> scanResult = jedis.scan(ScanParams.SCAN_POINTER_START, scanParams);
+                List<String> result = scanResult.getResult();
+                if (result != null) {
+                    keys.addAll(result.subList(0, Math.min(result.size(), 15)));
+                }
             } catch (Exception e) {
-                System.err.println("Failed to scan keys for node " + nodeName + ": " + e.getMessage());
+                System.err.println("Failed to scan sample keys for node " + nodeName + ": " + e.getMessage());
             }
             activeKeys.put(nodeName, keys);
         }
@@ -141,15 +172,20 @@ public class RedisCacheService {
             nodeMap.put("port", node.getPort());
             
             boolean isOnline = false;
+            long keyCount = 0;
             JedisPool pool = pools.get(node.getName());
             if (pool != null) {
                 try (Jedis jedis = pool.getResource()) {
                     isOnline = "PONG".equals(jedis.ping());
+                    if (isOnline) {
+                        keyCount = jedis.dbSize();
+                    }
                 } catch (Exception e) {
                     // Offline
                 }
             }
             nodeMap.put("online", isOnline);
+            nodeMap.put("keyCount", keyCount);
             nodeDetails.add(nodeMap);
         }
         

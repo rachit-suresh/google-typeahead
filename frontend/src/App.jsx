@@ -251,7 +251,7 @@ export default function App() {
         {windows.searchApp && (
           <div 
             onClick={() => handleFocus('searchApp')}
-            className={`absolute left-[6%] md:left-[12%] top-[5%] ${activeWindow === 'searchApp' ? 'z-30' : 'z-20'}`}
+            className={`absolute left-[4%] md:left-[8%] top-[6%] ${activeWindow === 'searchApp' ? 'z-30' : 'z-20'}`}
           >
             <WinWindow title="Search Engine 97" onClose={() => handleWindowClose('searchApp')}>
               <div className="flex flex-col gap-3 w-80 md:w-[500px]">
@@ -706,7 +706,7 @@ export default function App() {
         {windows.cacheMonitor && (
           <div 
             onClick={() => handleFocus('cacheMonitor')}
-            className={`absolute left-[10%] md:left-[28%] top-[25%] ${activeWindow === 'cacheMonitor' ? 'z-30' : 'z-20'}`}
+            className={`absolute left-[10%] md:left-[35%] top-[45%] ${activeWindow === 'cacheMonitor' ? 'z-30' : 'z-20'}`}
           >
             <WinWindow title="Consistent Cache Monitor" onClose={() => handleWindowClose('cacheMonitor')}>
               <CacheMonitor stats={cacheStats} />
