@@ -33,6 +33,10 @@ mvnw
 mvnw.cmd
 HELP.md
 
+# Ignore local documentation files
+REDIS_DOCUMENTATION.md
+CODEBASE_EXPLANATION.md
+
 # Log files
 *.log
 
