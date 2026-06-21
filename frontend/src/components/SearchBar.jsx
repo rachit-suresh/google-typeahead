@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-export default function SearchBar({ onSearch }) {
-  const [query, setQuery] = useState('');
+export default function SearchBar({ onSearch, query, setQuery }) {
   const [suggestions, setSuggestions] = useState([]);
   const [activeIdx, setActiveIdx] = useState(-1);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -76,8 +75,8 @@ export default function SearchBar({ onSearch }) {
     setQuery(val);
     setShowDropdown(false);
     
-    // Call the POST /search API to record/increment query count
-    fetch('http://localhost:8080/search', {
+    // Call the POST /search/submit Node.js API to record/increment query count
+    fetch('http://localhost:8081/search/submit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -103,8 +102,8 @@ export default function SearchBar({ onSearch }) {
 
     setShowDropdown(false);
 
-    // Call the POST /search API to record/increment query count
-    fetch('http://localhost:8080/search', {
+    // Call the POST /search/submit Node.js API to record/increment query count
+    fetch('http://localhost:8081/search/submit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -127,7 +126,7 @@ export default function SearchBar({ onSearch }) {
   return (
     <form onSubmit={handleSubmit} className="font-win" ref={containerRef}>
       <div className="flex flex-col gap-2 relative">
-        <label className="text-xs font-bold uppercase tracking-wider text-black select-none">
+        <label className="text-sm font-bold uppercase tracking-wider text-black select-none">
           Search Query:
         </label>
         
@@ -140,10 +139,10 @@ export default function SearchBar({ onSearch }) {
             onKeyDown={handleKeyDown}
             onFocus={() => setShowDropdown(true)}
             placeholder="Type search query here..."
-            className="win95-inset px-3 py-1.5 w-full text-sm text-black focus:outline-dotted focus:outline-2 focus:outline-black focus:outline-offset-[-3px]"
+            className="win95-inset px-4 py-2.5 w-full text-lg text-black focus:outline-dotted focus:outline-2 focus:outline-black focus:outline-offset-[-3px]"
           />
           {isLoading && (
-            <span className="absolute right-3 text-[10px] font-win-mono text-win-border-dark animate-blink">
+            <span className="absolute right-4 text-xs font-win-mono text-win-border-dark animate-blink">
               LOADING...
             </span>
           )}
@@ -151,7 +150,7 @@ export default function SearchBar({ onSearch }) {
 
         {/* Suggestion Dropdown panel */}
         {showDropdown && suggestions.length > 0 && (
-          <ul className="win95-inset absolute left-0 right-0 top-[60px] z-50 max-h-60 overflow-y-auto p-0.5 select-none border-2 border-win-border-dark">
+          <ul className="win95-inset absolute left-0 right-0 top-[72px] z-50 max-h-60 overflow-y-auto p-0.5 select-none border-2 border-win-border-dark">
             {suggestions.map((item, idx) => {
               const isHighlighted = idx === activeIdx;
               const isOdd = idx % 2 !== 0;
@@ -160,7 +159,7 @@ export default function SearchBar({ onSearch }) {
                   key={idx}
                   onClick={() => selectSuggestion(item.query)}
                   onMouseEnter={() => setActiveIdx(idx)}
-                  className={`px-3 py-1 text-xs cursor-pointer flex items-center justify-between font-win-mono ${
+                  className={`px-4 py-2 text-sm cursor-pointer flex items-center justify-between font-win-mono ${
                     isHighlighted 
                       ? 'bg-win-navy text-white' 
                       : isOdd 
@@ -169,7 +168,7 @@ export default function SearchBar({ onSearch }) {
                   }`}
                 >
                   <span className="truncate pr-4">{item.query}</span>
-                  <span className={`text-[10px] font-bold ${isHighlighted ? 'text-yellow-200' : 'text-win-border-dark'}`}>
+                  <span className={`text-xs font-bold ${isHighlighted ? 'text-yellow-200' : 'text-win-border-dark'}`}>
                     ({item.count.toLocaleString()})
                   </span>
                 </li>
@@ -183,14 +182,14 @@ export default function SearchBar({ onSearch }) {
       <div className="flex gap-3 justify-end mt-6">
         <button
           type="submit"
-          className="win95-outset bg-win-gray text-black text-xs font-bold px-4 py-2 uppercase hover:bg-[#d0d0d0] active:[border-color:#808080_#fff_#fff_#808080] active:translate-x-[1px] active:translate-y-[1px] focus:outline-dotted focus:outline-2 focus:outline-black focus:outline-offset-1"
+          className="win95-outset bg-win-gray text-black text-sm font-bold px-6 py-2.5 uppercase hover:bg-[#d0d0d0] active:[border-color:#808080_#fff_#fff_#808080] active:translate-x-[1px] active:translate-y-[1px] focus:outline-dotted focus:outline-2 focus:outline-black focus:outline-offset-1"
         >
           Search
         </button>
         <button
           type="button"
           onClick={() => { setQuery(''); setSuggestions([]); }}
-          className="win95-outset bg-win-gray text-black text-xs font-bold px-4 py-2 uppercase hover:bg-[#d0d0d0] active:[border-color:#808080_#fff_#fff_#808080] active:translate-x-[1px] active:translate-y-[1px] focus:outline-dotted focus:outline-2 focus:outline-black focus:outline-offset-1"
+          className="win95-outset bg-win-gray text-black text-sm font-bold px-6 py-2.5 uppercase hover:bg-[#d0d0d0] active:[border-color:#808080_#fff_#fff_#808080] active:translate-x-[1px] active:translate-y-[1px] focus:outline-dotted focus:outline-2 focus:outline-black focus:outline-offset-1"
         >
           Clear
         </button>

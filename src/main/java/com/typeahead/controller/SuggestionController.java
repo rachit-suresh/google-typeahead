@@ -1,5 +1,6 @@
 package com.typeahead.controller;
 
+import com.typeahead.cache.RedisCacheService;
 import com.typeahead.dto.SearchRequest;
 import com.typeahead.dto.SearchResponse;
 import com.typeahead.dto.SuggestionResponse;
@@ -13,15 +14,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
 public class SuggestionController {
 
     private final SuggestionService suggestionService;
+    private final RedisCacheService cacheService;
 
-    public SuggestionController(SuggestionService suggestionService) {
+    public SuggestionController(SuggestionService suggestionService, RedisCacheService cacheService) {
         this.suggestionService = suggestionService;
+        this.cacheService = cacheService;
     }
 
     @GetMapping("/suggest")
@@ -31,9 +35,14 @@ public class SuggestionController {
         return ResponseEntity.ok(suggestions);
     }
 
-    @PostMapping("/search")
+    @PostMapping("/typeahead/record")
     public ResponseEntity<SearchResponse> recordSearch(@RequestBody SearchRequest request) {
         suggestionService.recordSearch(request.query());
         return ResponseEntity.ok(new SearchResponse("Searched"));
+    }
+
+    @GetMapping("/cache/stats")
+    public ResponseEntity<Map<String, Object>> getCacheStats() {
+        return ResponseEntity.ok(cacheService.getCacheStats());
     }
 }
