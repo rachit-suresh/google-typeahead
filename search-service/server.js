@@ -19,8 +19,10 @@ app.post('/search/submit', async (req, res) => {
 
   console.log(`[Search Service] Received search: "${query}". Forwarding to Typeahead Service...`);
 
+  const TYPEAHEAD_URL = process.env.TYPEAHEAD_SERVICE_URL || 'http://localhost:8080';
+
   try {
-    const response = await fetch('http://localhost:8080/typeahead/record', {
+    const response = await fetch(`${TYPEAHEAD_URL}/typeahead/record`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
