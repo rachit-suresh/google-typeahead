@@ -1,0 +1,34 @@
+# Target build directory
+target/
+
+# Environment files containing secrets
+.env
+.env.local
+.env.*.local
+
+# Python Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE and Editor configs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Maven wrapper / local files
+.mvn/
+mvnw
+mvnw.cmd
+HELP.md
+
+# Log files
+*.log
