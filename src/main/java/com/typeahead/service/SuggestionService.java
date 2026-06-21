@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typeahead.cache.RedisCacheService;
 import com.typeahead.dto.SuggestionResponse;
 import com.typeahead.repository.SearchQueryRepository;
+import com.typeahead.scoring.ScoringStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
@@ -17,15 +19,18 @@ public class SuggestionService {
 
     private final SearchQueryRepository repository;
     private final RedisCacheService cacheService;
+    private final ScoringStrategy scoringStrategy;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final int limit;
 
     public SuggestionService(
             SearchQueryRepository repository,
             RedisCacheService cacheService,
+            ScoringStrategy scoringStrategy,
             @Value("${typeahead.suggestion.limit:10}") int limit) {
         this.repository = repository;
         this.cacheService = cacheService;
+        this.scoringStrategy = scoringStrategy;
         this.limit = limit;
     }
 
@@ -49,9 +54,27 @@ public class SuggestionService {
 
         // 2. Cache miss: read from Database
         cacheService.incrementDbQueries();
-        List<SuggestionResponse> suggestions = repository.findTopByPrefix(normalizedPrefix, PageRequest.of(0, limit))
+        LocalDateTime now = LocalDateTime.now();
+        List<SuggestionResponse> suggestions = repository.findTopByPrefix(
+                    normalizedPrefix,
+                    scoringStrategy.getDayWeight(),
+                    scoringStrategy.getWeekWeight(),
+                    scoringStrategy.getMonthWeight(),
+                    PageRequest.of(0, limit)
+                )
                 .stream()
-                .map(entity -> new SuggestionResponse(entity.getQuery(), entity.getCount()))
+                .map(entity -> {
+                    double score = scoringStrategy.score(entity, now);
+                    return new SuggestionResponse(
+                        entity.getQuery(),
+                        Math.round(score), // Backward compatibility with count
+                        score,
+                        entity.getDayCount(),
+                        entity.getWeekCount(),
+                        entity.getMonthCount()
+                    );
+                })
+                .sorted((a, b) -> Double.compare(b.score(), a.score()))
                 .toList();
 
         // 3. Write back to cache

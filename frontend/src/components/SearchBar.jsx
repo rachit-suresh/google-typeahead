@@ -154,6 +154,9 @@ export default function SearchBar({ onSearch, query, setQuery }) {
             {suggestions.map((item, idx) => {
               const isHighlighted = idx === activeIdx;
               const isOdd = idx % 2 !== 0;
+              // Check if query is trending (at least 5 searches today and today represents >= 30% of month's searches)
+              const isTrending = item.dayCount > 5 && item.dayCount >= item.monthCount * 0.3;
+              
               return (
                 <li
                   key={idx}
@@ -167,9 +170,16 @@ export default function SearchBar({ onSearch, query, setQuery }) {
                         : 'bg-white text-black'
                   }`}
                 >
-                  <span className="truncate pr-4">{item.query}</span>
+                  <div className="flex items-center gap-2 truncate pr-4">
+                    <span className="truncate">{item.query}</span>
+                    {isTrending && (
+                      <span className="text-[10px] bg-red-600 text-white px-1.5 py-0.5 font-bold animate-pulse rounded select-none uppercase tracking-wider">
+                        🔥 TRENDING
+                      </span>
+                    )}
+                  </div>
                   <span className={`text-xs font-bold ${isHighlighted ? 'text-yellow-200' : 'text-win-border-dark'}`}>
-                    ({item.count.toLocaleString()})
+                    ({Math.round(item.score).toLocaleString()})
                   </span>
                 </li>
               );
