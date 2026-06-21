@@ -75,13 +75,53 @@ export default function SearchBar({ onSearch }) {
   const selectSuggestion = (val) => {
     setQuery(val);
     setShowDropdown(false);
-    onSearch(val);
+    
+    // Call the POST /search API to record/increment query count
+    fetch('http://localhost:8080/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query: val }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to record search');
+        return res.json();
+      })
+      .then(() => {
+        onSearch(val);
+      })
+      .catch((err) => {
+        console.error('Error submitting search:', err);
+        onSearch(val); // Fallback: still notify parent
+      });
   };
 
   const handleSubmit = (e) => {
     if (e) e.preventDefault();
+    if (!query.trim()) return;
+
     setShowDropdown(false);
-    onSearch(query);
+
+    // Call the POST /search API to record/increment query count
+    fetch('http://localhost:8080/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query: query.trim() }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to record search');
+        return res.json();
+      })
+      .then(() => {
+        onSearch(query);
+      })
+      .catch((err) => {
+        console.error('Error submitting search:', err);
+        onSearch(query); // Fallback: still notify parent
+      });
   };
 
   return (

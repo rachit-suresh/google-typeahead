@@ -34,4 +34,13 @@ public class SuggestionService {
                 .map(entity -> new SuggestionResponse(entity.getQuery(), entity.getCount()))
                 .toList();
     }
+
+    public void recordSearch(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return;
+        }
+
+        String normalizedQuery = query.trim().toLowerCase();
+        repository.upsertQuery(normalizedQuery);
+    }
 }
