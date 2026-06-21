@@ -3,12 +3,14 @@ package com.typeahead.controller;
 import com.typeahead.dto.SuggestionResponse;
 import com.typeahead.service.SuggestionService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 public class SuggestionController {
 
