@@ -102,3 +102,13 @@ A set of verification scripts is provided in the `scripts/` directory of your wo
     ```bash
     python scripts/benchmark_writes.py
     ```
+
+
+<img width="2878" height="1730" alt="image" src="https://github.com/user-attachments/assets/434dc32f-2f4b-4235-96b6-57b3e847b107" />
+
+
+<img width="2873" height="1716" alt="image" src="https://github.com/user-attachments/assets/740d8c39-b26a-43d2-8c5c-70f2caae5e7c" />
+
+
+
+
