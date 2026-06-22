@@ -9,7 +9,7 @@ services:
     environment:
       - POSTGRES_DB=typeahead_db
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=18112006
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
@@ -49,7 +49,7 @@ services:
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/typeahead_db
       - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=18112006
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - TYPEAHEAD_CACHE_NODES_0_NAME=Redis-Node-1
       - TYPEAHEAD_CACHE_NODES_0_HOST=redis-node-1
       - TYPEAHEAD_CACHE_NODES_0_PORT=6379
@@ -100,7 +100,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=typeahead_db
       - DB_USER=postgres
-      - DB_PASSWORD=18112006
+      - DB_PASSWORD=${DB_PASSWORD}
 
 volumes:
   postgres-data:

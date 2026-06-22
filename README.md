@@ -47,7 +47,7 @@ DB_HOST=localhost
 DB_PORT=5433
 DB_NAME=typeahead_db
 DB_USER=postgres
-DB_PASSWORD=18112006
+DB_PASSWORD=<your_secure_password>
 ```
 
 ### 2. Automatic Data Loading (AOL Dataset)
