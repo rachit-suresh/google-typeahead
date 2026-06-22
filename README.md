@@ -88,17 +88,17 @@ typeahead:
 
 ## Verifying & Benchmarking System Components
 
-A set of verification scripts is provided in the brain scratch area of your workspace to test components on the host:
+A set of verification scripts is provided in the `scripts/` directory of your workspace to test components on the host:
 
 *   **Database Upsert Check**:
     ```bash
-    python .gemini/antigravity-ide/brain/a98ba661-7819-47e6-ada7-9dd23b3adc12/scratch/check_postgres.py
+    python scripts/check_postgres.py
     ```
 *   **Batch Write Buffer & Eviction Validation**:
     ```bash
-    python .gemini/antigravity-ide/brain/a98ba661-7819-47e6-ada7-9dd23b3adc12/scratch/verify_batch_write.py
+    python scripts/verify_batch_write.py
     ```
 *   **Write Latency & Throughput Benchmark**:
     ```bash
-    python .gemini/antigravity-ide/brain/a98ba661-7819-47e6-ada7-9dd23b3adc12/scratch/benchmark_writes.py
+    python scripts/benchmark_writes.py
     ```

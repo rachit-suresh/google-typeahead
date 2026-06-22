@@ -152,10 +152,10 @@ To ensure realistic concurrency and latency reporting, we bypassed simulated moc
 2. **Submit Telemetry Searches**:
    - Run the automated benchmarking script to simulate write-path traffic:
      ```bash
-     .\.venv\Scripts\python.exe C:\Users\vangs\.gemini\antigravity-ide\brain\a98ba661-7819-47e6-ada7-9dd23b3adc12\scratch\benchmark_writes.py
+     .\.venv\Scripts\python.exe scripts/benchmark_writes.py
      ```
 3. **Verify Counts**:
    - Run the DB verification script to confirm all buffered records flush successfully to the containerized database:
      ```bash
-     .\.venv\Scripts\python.exe C:\Users\vangs\.gemini\antigravity-ide\brain\a98ba661-7819-47e6-ada7-9dd23b3adc12\scratch\verify_bench_db.py
+     .\.venv\Scripts\python.exe scripts/check_postgres.py
      ```
